@@ -7,7 +7,7 @@ const restify = require('restify');
 
 // Import required bot services.
 // See https://aka.ms/bot-services to learn more about the different parts of a bot.
-const { BotFrameworkAdapter } = require('botbuilder');
+const { BotFrameworkAdapter, TranscriptLoggerMiddleware } = require('botbuilder');
 
 // Import required bot configuration.
 const { BotConfiguration } = require('botframework-config');
@@ -17,6 +17,7 @@ const { MyBot } = require('./bot');
 
 // Middleware
 const { HandoverMiddleware, ArrayHandoverProvider } = require('./middleware');
+const { CustomLogger } = require('./middleware/CustomLogger');
 
 // Read botFilePath and botFileSecret from .env file
 // Note: Ensure you have a .env file and include botFilePath and botFileSecret.
@@ -47,7 +48,7 @@ let botConfig;
 try {
     botConfig = BotConfiguration.loadSync(BOT_FILE, process.env.botFileSecret);
 } catch (err) {
-    console.error(`\nError reading bot file. Please ensure you have valid botFilePath and botFileSecret set for your environment.`);
+    console.error(`\n Error reading bot file. Please ensure you have valid botFilePath and botFileSecret set for your environment.`);
     console.error(`\n - The botFileSecret is available under appsettings for your Azure Bot Service bot.`);
     console.error(`\n - If you are running this bot locally, consider adding a .env file with botFilePath and botFileSecret.`);
     console.error(`\n - See https://aka.ms/about-bot-file to learn more about .bot file its use and bot configuration.\n\n`);
@@ -65,6 +66,11 @@ const adapter = new BotFrameworkAdapter({
 });
 const provider = new ArrayHandoverProvider();
 adapter.use(new HandoverMiddleware(provider, adapter));
+
+// Transcript logger middleware automatically logs incoming and outgoing activities.
+const transcriptStore = new CustomLogger();
+var transcriptMiddleware = new TranscriptLoggerMiddleware(transcriptStore);
+adapter.use(transcriptMiddleware);
 
 // Catch-all for errors.
 adapter.onTurnError = async (context, error) => {
@@ -86,6 +92,6 @@ server.post('/api/messages', (req, res) => {
 });
 
 server.get('/*', restify.plugins.serveStatic({
-    directory: path.join(__dirname, "public"),
+    directory: path.join(__dirname, 'public'),
     default: '/index.html'
 }));

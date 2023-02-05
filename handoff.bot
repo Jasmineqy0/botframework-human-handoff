@@ -4,8 +4,8 @@
     "services": [
         {
             "type": "endpoint",
-            "appId": "",
-            "appPassword": "",
+            "appId": "<YOUR_APP_ID>",
+            "appPassword": "<YOUR_APP_PASSWORD>",
             "endpoint": "http://localhost:3978/api/messages",
             "id": "1",
             "name": "development"
@@ -13,6 +13,6 @@
     ],
     "padlock": "",
     "version": "2.0",
-    "path": "C:\\Users\\v-thdurn\\Developer\\Node\\handoff\\handoff.bot",
+    "path": "/Users/QianyunLi/Desktop/bot/botframework-human-handoff/handoff.bot",
     "overrides": null
 }
