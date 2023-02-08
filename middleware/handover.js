@@ -1,5 +1,11 @@
-const { ActivityTypes, TurnContext, BotFrameworkAdapter } = require('botbuilder');
+/* eslint-disable camelcase */
+const dotenv = require('dotenv');
+const { create_contact, create_conversation, create_message } = require('../chatwoot/chatwootAPI');
+const { ActivityTypes, TurnContext } = require('botbuilder');
 const { localDb } = require('../levelDb/levelDb');
+const path = require('path');
+const ENV_FILE = path.join(path.dirname(__dirname), '.env');
+dotenv.config({ path: ENV_FILE });
 
 const UserState = {
     Bot: 'BOT',
@@ -46,15 +52,41 @@ class HandoverMiddleware {
         const { activity: { text } } = turnContext;
 
         if (user.state === UserState.Agent) {
-            return await this.adapter.continueConversation(user.agentReference, async agentContext => {
-                await agentContext.sendActivity(turnContext.activity.text);
-            });
+            // return await this.adapter.continueConversation(user.agentReference, async agentContext => {
+            //     await agentContext.sendActivity(turnContext.activity.text);
+            // });
+            const conversation_id = await localDb.put('conversation_id');
+            const source_id = await localDb.put('source_id');
+            await create_message(process.env.chatwoot_host, process.env.chatwoot_port, process.env.inbox_id, source_id, conversation_id, turnContext.activity.text);
         }
 
         switch (text.toLowerCase()) {
         case 'agent':
+            await localDb.put('user_ref', conversationReference);
             await this.provider.queueForAgent(conversationReference);
             await turnContext.sendActivity('Please wait while we try to connect you to an agent.');
+
+            const client_name = turnContext.activity.from.name;
+            const client_id = turnContext.activity.from.id;
+            // eslint-disable-next-line no-unused-vars
+            const [source_id, pubsub_token] = await create_contact(process.env.chatwootHost, process.env.chatwootPort, client_id, client_name, process.env.inboxId);
+            const conversation_id = await create_conversation(process.env.chatwootHost, process.env.chatwootPort, client_id, client_name, process.env.inboxId, source_id);
+
+            await localDb.put('conversation_id', conversation_id);
+            await localDb.put('source_id', source_id);
+
+            await create_message(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, source_id, conversation_id, `You are now connected to ${ client_name }`);
+            try {
+                var convId = user.userReference.conversation.id;
+                if (convId.indexOf('|') !== -1) {
+                    convId = user.userReference.conversation.id.replace(/\|.*/, '');
+                }
+                let transcript = await localDb.get(convId);
+                transcript = transcript.join('\n');
+                await create_message(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, source_id, conversation_id, transcript);
+            } catch (err) {
+                console.log(err);
+            }
             break;
         case 'cancel':
             await this.provider.unqueueForAgent(conversationReference);
@@ -71,60 +103,65 @@ class HandoverMiddleware {
    * @param {*} next
    */
     async manageAgent(turnContext, next) {
-        const conversationReference = TurnContext.getConversationReference(turnContext.activity);
-        const user = await this.provider.findByAgent(conversationReference);
+        const userReference = await localDb.get('user_ref');
+        // const conversationReference = TurnContext.getConversationReference(turnContext.activity);
+        // const user = await this.provider.findByAgent(conversationReference);
         const { activity: { text } } = turnContext;
 
-        if (user) {
-            if (text === '#disconnect') {
-                this.provider.disconnectFromAgent(conversationReference);
-                await turnContext.sendActivity('You have been disconnected from the user.');
-                await this.adapter.continueConversation(user.userReference, async userContext => {
-                    await userContext.sendActivity('The agent disconnected from the conversation. You are now reconnected to the bot.');
-                });
-                return;
-            } else if (text.indexOf('#') === 0) {
-                await turnContext.sendActivity('Command not valid when connect to user');
-                return;
-            } else {
-                // await this.provider.log(user, conversationReference.user.name);
-                return this.adapter.continueConversation(user.userReference, async turnContext => {
-                    await turnContext.sendActivity(text);
-                });
-            }
-        }
+        return this.adapter.continueConversation(userReference, async turnContext => {
+            await turnContext.sendActivity(text);
+        });
 
-        switch (text) {
-        case '#list':
-            const queue = this.provider.getQueue();
-            if (queue.length !== 0) {
-                const message = queue.map(user => user.userReference.user.name).join('\n');
-                await turnContext.sendActivity('Users:\n\n' + message);
-            } else {
-                await turnContext.sendActivity('There are no users in the Queue right now.');
-            }
-            break;
-        case '#connect':
-            const user = await this.provider.connectToAgent(conversationReference);
-            if (user) {
-                await turnContext.sendActivity(`You are connected to ${ user.userReference.user.name }`);
-                try {
-                    var convId = user.userReference.conversation.id;
-                    if (convId.indexOf('|') !== -1) {
-                        convId = user.userReference.conversation.id.replace(/\|.*/, '');
-                    }
-                    const transcript = await localDb.get(convId);
-                    await turnContext.sendActivity(transcript.join('\n'));
-                } catch (err) {
-                    console.log(err);
-                }
-                await this.adapter.continueConversation(user.userReference, async userContext => {
-                    await userContext.sendActivity('You are now connected to an agent!');
-                });
-            } else {
-                await turnContext.sendActivity('There are no users in the Queue right now.');
-            }
-        }
+        // if (user) {
+        //     if (text === '#disconnect') {
+        //         this.provider.disconnectFromAgent(conversationReference);
+        //         await turnContext.sendActivity('You have been disconnected from the user.');
+        //         await this.adapter.continueConversation(user.userReference, async userContext => {
+        //             await userContext.sendActivity('The agent disconnected from the conversation. You are now reconnected to the bot.');
+        //         });
+        //         return;
+        //     } else if (text.indexOf('#') === 0) {
+        //         await turnContext.sendActivity('Command not valid when connect to user');
+        //         return;
+        //     } else {
+        //         // await this.provider.log(user, conversationReference.user.name);
+        //         return this.adapter.continueConversation(user.userReference, async turnContext => {
+        //             await turnContext.sendActivity(text);
+        //         });
+        //     }
+        // }
+
+        // switch (text) {
+        // case '#list':
+        //     const queue = this.provider.getQueue();
+        //     if (queue.length !== 0) {
+        //         const message = queue.map(user => user.userReference.user.name).join('\n');
+        //         await turnContext.sendActivity('Users:\n\n' + message);
+        //     } else {
+        //         await turnContext.sendActivity('There are no users in the Queue right now.');
+        //     }
+        //     break;
+        // case '#connect':
+        //     const user = await this.provider.connectToAgent(conversationReference);
+        //     if (user) {
+        //         await turnContext.sendActivity(`You are connected to ${ user.userReference.user.name }`);
+        //         try {
+        //             var convId = user.userReference.conversation.id;
+        //             if (convId.indexOf('|') !== -1) {
+        //                 convId = user.userReference.conversation.id.replace(/\|.*/, '');
+        //             }
+        //             const transcript = await localDb.get(convId);
+        //             await turnContext.sendActivity(transcript.join('\n'));
+        //         } catch (err) {
+        //             console.log(err);
+        //         }
+        //         await this.adapter.continueConversation(user.userReference, async userContext => {
+        //             await userContext.sendActivity('You are now connected to an agent!');
+        //         });
+        //     } else {
+        //         await turnContext.sendActivity('There are no users in the Queue right now.');
+        //     }
+        // }
     }
 }
 

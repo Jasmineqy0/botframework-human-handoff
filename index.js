@@ -3,11 +3,16 @@
 
 const dotenv = require('dotenv');
 const path = require('path');
-const restify = require('restify');
+const bodyParser = require('body-parser');
 
 // Import required bot services.
 // See https://aka.ms/bot-services to learn more about the different parts of a bot.
-const { BotFrameworkAdapter, TranscriptLoggerMiddleware } = require('botbuilder');
+const botbuilder = require('botbuilder');
+const { BotFrameworkAdapter, TranscriptLoggerMiddleware, TurnContext } = botbuilder;
+
+const express = require('express');
+const app = express();
+app.use(bodyParser.json());
 
 // Import required bot configuration.
 const { BotConfiguration } = require('botframework-config');
@@ -33,9 +38,9 @@ const DEV_ENVIRONMENT = 'development';
 const BOT_CONFIGURATION = (process.env.NODE_ENV || DEV_ENVIRONMENT);
 
 // Create HTTP server
-const server = restify.createServer();
-server.listen(process.env.port || process.env.PORT || 3978, () => {
-    console.log(`\n${ server.name } listening to ${ server.url }`);
+app.use(bodyParser.json());
+app.listen(process.env.port || process.env.PORT || 3978, () => {
+    // console.log(`\n${ server.name } listening to ${ server.url }`);
     console.log(`\nGet Bot Framework Emulator: https://aka.ms/botframework-emulator`);
     console.log(`\nTo talk to your bot, open handoff.bot file in the Emulator`);
 });
@@ -84,14 +89,45 @@ adapter.onTurnError = async (context, error) => {
 const myBot = new MyBot();
 
 // Listen for incoming requests.
-server.post('/api/messages', (req, res) => {
+app.post('/api/messages', (req, res) => {
     adapter.processActivity(req, res, async (context) => {
         // Route to main dialog.
         await myBot.onTurn(context);
     });
 });
 
-server.get('/*', restify.plugins.serveStatic({
-    directory: path.join(__dirname, 'public'),
-    default: '/index.html'
-}));
+app.post('/', (req, res) => {
+    if (res.req.body && res.req.body.message_type === 'outgoing') {
+        req.body.type = 'message';
+        req.body.token = 'dj0OaV6YJqw.HH4UHT9eN52tO3lhvMwEsAGtDRgYS57wvGGpRLDiUlc';
+        req.headers.authorization = 'Bearer dj0OaV6YJqw.HH4UHT9eN52tO3lhvMwEsAGtDRgYS57wvGGpRLDiUlc';
+
+        adapter.processActivity(req, res, async () => {
+            let channelAccount = {
+                id: res.req.body.account.id,
+                name: `agent_${ res.req.body.account.name }`,
+                role: 'agent'
+            };
+
+            let conversationAccount = {
+                isGroup: false,
+                conversationType: '',
+                id: res.req.body.id,
+                name: '',
+                role: ''
+            };
+
+            const message = {
+                channelData: channelAccount,
+                conversation: conversationAccount,
+                channelId: 'chatwoot',
+                text: res.req.body.content,
+                type: 'message'
+            };
+
+            let turnContext = new TurnContext(adapter, message);
+
+            await myBot.onTurn(turnContext);
+        });
+    }
+});
