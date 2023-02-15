@@ -73,7 +73,7 @@ class HandoverMiddleware {
                 const clientId = turnContext.activity.from.id;
 
                 try {
-                // eslint-disable-next-line no-unused-vars
+                    // eslint-disable-next-line no-unused-vars
                     const [sourceId, pubsub_token] = await createContact(process.env.chatwootHost, process.env.chatwootPort, clientId, clientName, process.env.inboxId);
                     const conversationId = await createConversation(process.env.chatwootHost, process.env.chatwootPort, clientId, clientName, process.env.inboxId, sourceId);
 
