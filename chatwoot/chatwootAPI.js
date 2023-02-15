@@ -15,65 +15,65 @@ app.use(bodyParser.json());
 
 // await create_message(chatwoot_host, chatwoot_port, inbox_id, cookie.source_id, cookie.conversation_id, "Hi, I'm a client");
 
-async function create_contact(chatwoot_host, chatwoot_port, client_id, client_name, inbox_id) {
+async function createContact(chatwootHost, chatwootPort, clientId, clientName, inboxId) {
     console.log('------------- creating contact -------------');
-    const api = `/public/api/v1/inboxes/${ inbox_id }/contacts`;
+    const api = `/public/api/v1/inboxes/${ inboxId }/contacts`;
 
-    const req_body = {
-        'identifier': client_id,
+    const reqBody = {
+        'identifier': clientId,
         'identifier_hash': '',
-        'email': `${ client_name }@test.de`,
-        'name': client_name,
+        'email': `${ clientName }@test.de`,
+        'name': clientName,
         'phone_number': '',
         'avatar_url': '',
         'custom_attributes': {}
     };
-    const res_body = JSON.parse(await chatwoot_post(chatwoot_host, chatwoot_port, api, req_body));
-    return [res_body.source_id, res_body.pubsub_token];
+    const resBody = JSON.parse(await chatwootPost(chatwootHost, chatwootPort, api, reqBody));
+    return [resBody.source_id, resBody.pubsub_token];
 }
 
-async function create_conversation(chatwoot_host, chatwoot_port, client_id, client_name, inbox_id, source_id) {
+async function createConversation(chatwootHost, chatwootPort, clientId, clientName, inboxId, sourceId) {
     console.log('------------- creating conversation -------------');
-    const api = `/public/api/v1/inboxes/${ inbox_id }/contacts/${ source_id }/conversations`;
+    const api = `/public/api/v1/inboxes/${ inboxId }/contacts/${ sourceId }/conversations`;
 
-    const req_body = {
-        'identifier': client_id,
+    const reqBody = {
+        'identifier': clientId,
         'identifier_hash': '',
-        'email': `${ client_name }@test.de`,
-        'name': client_name,
+        'email': `${ clientName }@test.de`,
+        'name': clientName,
         'phone_number': '',
         'avatar_url': '',
         'custom_attributes': {}
     };
-    const res_body = JSON.parse(await chatwoot_post(chatwoot_host, chatwoot_port, api, req_body));
-    return res_body.id; // return conversation id
+    const resBody = JSON.parse(await chatwootPost(chatwootHost, chatwootPort, api, reqBody));
+    return resBody.id; // return conversation id
 }
 
-async function create_message(chatwoot_host, chatwoot_port, inbox_id, source_id, conversation_id, msg) {
+async function createMessage(chatwootHost, chatwootPort, inboxId, sourceId, conversationId, msg) {
     console.log('------------- creating message -------------');
-    const api = `/public/api/v1/inboxes/${ inbox_id }/contacts/${ source_id }/conversations/${ conversation_id }/messages`;
+    const api = `/public/api/v1/inboxes/${ inboxId }/contacts/${ sourceId }/conversations/${ conversationId }/messages`;
 
-    const req_body = {
+    const reqBody = {
         'content': msg,
         'echo_id': ''
     };
-    const res_body = JSON.parse(await chatwoot_post(chatwoot_host, chatwoot_port, api, req_body));
-    return res_body;
+    const resBody = JSON.parse(await chatwootPost(chatwootHost, chatwootPort, api, reqBody));
+    return resBody;
 }
 
-async function list_all_message(chatwoot_host, chatwoot_port, inbox_id, source_id, conversation_id) {
+async function listAllMessage(chatwootHost, chatwootPort, inboxId, sourceId, conversationId) {
     console.log('------------- receiving message -------------');
-    const api = `/public/api/v1/inboxes/${ inbox_id }/contacts/${ source_id }/conversations/${ conversation_id }/messages`;
+    const api = `/public/api/v1/inboxes/${ inboxId }/contacts/${ sourceId }/conversations/${ conversationId }/messages`;
 
-    const res_body = await chatwoot_get(chatwoot_host, chatwoot_port, api);
+    const res_body = await chatwootGet(chatwootHost, chatwootPort, api);
     return res_body;
 }
 
-async function chatwoot_get(chatwoot_host, chatwoot_port, api) {
+async function chatwootGet(chatwootHost, chatwootPort, api) {
     const options = {
         method: 'GET',
-        host: chatwoot_host,
-        port: chatwoot_port,
+        host: chatwootHost,
+        port: chatwootPort,
         path: api,
         headers: {
             'Content-Type': 'application/json',
@@ -100,11 +100,11 @@ async function chatwoot_get(chatwoot_host, chatwoot_port, api) {
     });
 }
 
-function chatwoot_post(chatwoot_host, chatwoot_port, api, req_body) {
+function chatwootPost(chatwootHost, chatwootPort, api, reqBody) {
     const options = {
         method: 'POST',
-        host: chatwoot_host,
-        port: chatwoot_port,
+        host: chatwootHost,
+        port: chatwootPort,
         path: api,
         headers: {
             'Content-Type': 'application/json',
@@ -112,7 +112,7 @@ function chatwoot_post(chatwoot_host, chatwoot_port, api, req_body) {
         }
     };
 
-    const payload = JSON.stringify(req_body);
+    const payload = JSON.stringify(reqBody);
 
     return new Promise((resolve, reject) => {
         const request = http.request(options, (response) => {
@@ -134,7 +134,7 @@ function chatwoot_post(chatwoot_host, chatwoot_port, api, req_body) {
     });
 }
 
-module.exports.create_contact = create_contact;
-module.exports.create_conversation = create_conversation;
-module.exports.create_message = create_message;
-module.exports.list_all_message = list_all_message;
+exports.createContact = createContact;
+exports.createConversation = createConversation;
+exports.createMessage = createMessage;
+exports.listAllMessage = listAllMessage;

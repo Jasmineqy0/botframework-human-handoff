@@ -7,8 +7,9 @@ const bodyParser = require('body-parser');
 
 // Import required bot services.
 // See https://aka.ms/bot-services to learn more about the different parts of a bot.
-const botbuilder = require('botbuilder');
-const { BotFrameworkAdapter, TranscriptLoggerMiddleware, TurnContext } = botbuilder;
+const { BotFrameworkAdapter,
+    TranscriptLoggerMiddleware,
+    TurnContext } = require('botbuilder');
 
 const express = require('express');
 const app = express();
@@ -21,8 +22,9 @@ const { BotConfiguration } = require('botframework-config');
 const { MyBot } = require('./bot');
 
 // Middleware
-const { HandoverMiddleware, ArrayHandoverProvider } = require('./middleware');
+const { HandoverMiddleware, ArrayHandoverProvider } = require('./middleware/handoverMiddleware');
 const { CustomLogger } = require('./middleware/CustomLogger');
+const { ChatwootAdapter } = require('./chatwoot/chatwootAdapter');
 
 // Read botFilePath and botFileSecret from .env file
 // Note: Ensure you have a .env file and include botFilePath and botFileSecret.
@@ -41,6 +43,7 @@ const BOT_CONFIGURATION = (process.env.NODE_ENV || DEV_ENVIRONMENT);
 app.use(bodyParser.json());
 app.listen(process.env.port || process.env.PORT || 3978, () => {
     // console.log(`\n${ server.name } listening to ${ server.url }`);
+    console.log('bot running on port 3978');
     console.log(`\nGet Bot Framework Emulator: https://aka.ms/botframework-emulator`);
     console.log(`\nTo talk to your bot, open handoff.bot file in the Emulator`);
 });
@@ -65,20 +68,23 @@ const endpointConfig = botConfig.findServiceByNameOrId(BOT_CONFIGURATION);
 
 // Create adapter.
 // See https://aka.ms/about-bot-adapter to learn more about .bot file its use and bot configuration.
-const adapter = new BotFrameworkAdapter({
+const botAdapter = new BotFrameworkAdapter({
     appId: endpointConfig.appId || process.env.microsoftAppID,
     appPassword: endpointConfig.appPassword || process.env.microsoftAppPassword
 });
+const chatwootAdapter = new ChatwootAdapter();
 const provider = new ArrayHandoverProvider();
-adapter.use(new HandoverMiddleware(provider, adapter));
+const handoverMiddleware = new HandoverMiddleware(provider, botAdapter);
+botAdapter.use(handoverMiddleware);
+chatwootAdapter.use(handoverMiddleware);
 
 // Transcript logger middleware automatically logs incoming and outgoing activities.
 const transcriptStore = new CustomLogger();
 var transcriptMiddleware = new TranscriptLoggerMiddleware(transcriptStore);
-adapter.use(transcriptMiddleware);
+botAdapter.use(transcriptMiddleware);
 
 // Catch-all for errors.
-adapter.onTurnError = async (context, error) => {
+botAdapter.onTurnError = async (context, error) => {
     // This check writes out errors to console log .vs. app insights.
     console.error(`\n [onTurnError]: ${ error }`);
     // Send a message to the user
@@ -90,44 +96,43 @@ const myBot = new MyBot();
 
 // Listen for incoming requests.
 app.post('/api/messages', (req, res) => {
-    adapter.processActivity(req, res, async (context) => {
+    botAdapter.processActivity(req, res, async (context) => {
         // Route to main dialog.
         await myBot.onTurn(context);
     });
 });
 
 app.post('/', (req, res) => {
-    if (res.req.body && res.req.body.message_type === 'outgoing') {
-        req.body.type = 'message';
-        req.body.token = 'dj0OaV6YJqw.HH4UHT9eN52tO3lhvMwEsAGtDRgYS57wvGGpRLDiUlc';
-        req.headers.authorization = 'Bearer dj0OaV6YJqw.HH4UHT9eN52tO3lhvMwEsAGtDRgYS57wvGGpRLDiUlc';
+    if (req.body && req.body.message_type === 'outgoing') {
+        console.log('------------- bot receiving message from chatwoot agent -------------');
+        let channelAccount = {
+            id: req.body.account.id,
+            name: `agent_${ req.body.account.name }`,
+            role: 'agent' };
+        let conversationAccount = {
+            isGroup: false,
+            conversationType: '',
+            id: req.body.conversation.id,
+            name: `agent_${ req.body.account.name }`,
+            role: 'agent' };
 
-        adapter.processActivity(req, res, async () => {
-            let channelAccount = {
-                id: res.req.body.account.id,
-                name: `agent_${ res.req.body.account.name }`,
-                role: 'agent'
-            };
+        // if (Array.isArray(contentEvent.metadata) && contentEvent.metadata[0] && contentEvent.metadata[0].id) {
+        //     message.id = contentEvent.metadata[0].id;
+        // }
 
-            let conversationAccount = {
-                isGroup: false,
-                conversationType: '',
-                id: res.req.body.id,
-                name: '',
-                role: ''
-            };
+        const message = {
+            id: req.body.id,
+            channelData: channelAccount,
+            conversation: conversationAccount,
+            channelId: 'chatwoot',
+            text: req.body.content,
+            type: 'message'
+        };
 
-            const message = {
-                channelData: channelAccount,
-                conversation: conversationAccount,
-                channelId: 'chatwoot',
-                text: res.req.body.content,
-                type: 'message'
-            };
+        let turnContext = new TurnContext(chatwootAdapter, message);
 
-            let turnContext = new TurnContext(adapter, message);
-
-            await myBot.onTurn(turnContext);
+        chatwootAdapter.runMiddleware(turnContext, async (context) => {
+            await myBot.onTurn(context);
         });
     }
 });
