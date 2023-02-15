@@ -1,7 +1,7 @@
 const { BotAdapter } = require('botbuilder');
 
 class ChatwootAdapter extends BotAdapter {
-    constructor(chatwootConfiguration) {
+    constructor(chatwootConfiguration = null) {
         super();
         this.chatwootConfiguration = chatwootConfiguration;
     }

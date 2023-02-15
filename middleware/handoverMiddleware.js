@@ -84,7 +84,7 @@ class HandoverMiddleware {
                 if (convId.indexOf('|') !== -1) {
                     convId = user.userReference.conversation.id.replace(/\|.*/, '');
                 }
-                let transcript = await localDb.get(convId);
+                let transcript = await localDb.get(`transcript_${ convId }`);
                 transcript = transcript.join('\n');
                 await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, sourceId, conversationId, transcript);
             } catch (err) {

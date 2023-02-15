@@ -13,7 +13,7 @@ class CustomLogger {
      * @param activity Activity being logged.
      */
 
-    // Set up Cosmos Storage
+    // Set up levelDb Storage
     constructor() {
         this.transcriptStorage = localDb;
         this.conversationLogger = {};
@@ -36,19 +36,12 @@ class CustomLogger {
                     convId = activity.conversation.id.replace(/\|.*/, '');
                 }
 
-                // // Get today's date for datestamp
-                // var currentDate = new Date();
-                // var day = currentDate.getDate();
-                // var month = currentDate.getMonth() + 1;
-                // var year = currentDate.getFullYear();
-                // var datestamp = year + '-' + month + '-' + day;
-
-                var fileName = `${ convId }`;
+                var fileName = `transcript_${ convId }`;
 
                 // var timestamp = Math.floor(Date.now() / 1);
 
                 if (!(fileName in this.conversationLogger)) {
-                    this.conversationLogger[fileName] = [];
+                    this.conversationLogger[fileName] = ['Chat Transcript:'];
                     // this.conversationLogger[fileName].botName = process.env.BOTNAME;
                 }
 
