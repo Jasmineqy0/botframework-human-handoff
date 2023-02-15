@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
@@ -65,8 +64,8 @@ async function listAllMessage(chatwootHost, chatwootPort, inboxId, sourceId, con
     console.log('------------- receiving message -------------');
     const api = `/public/api/v1/inboxes/${ inboxId }/contacts/${ sourceId }/conversations/${ conversationId }/messages`;
 
-    const res_body = await chatwootGet(chatwootHost, chatwootPort, api);
-    return res_body;
+    const resBody = await chatwootGet(chatwootHost, chatwootPort, api);
+    return resBody;
 }
 
 async function chatwootGet(chatwootHost, chatwootPort, api) {
