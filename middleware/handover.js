@@ -1,4 +1,4 @@
-const { ActivityTypes, TurnContext, BotFrameworkAdapter } = require('botbuilder');
+const { ActivityTypes, TurnContext, ActionTypes, CardFactory } = require('botbuilder');
 const { localDb } = require('../levelDb/levelDb');
 
 const UserState = {
@@ -26,7 +26,7 @@ class HandoverMiddleware {
     async onTurn(turnContext, next) {
         if (turnContext.activity.type !== ActivityTypes.Message) { return await next(); }
 
-        if (turnContext.activity.from.name.toLowerCase().startsWith('agent')) {
+        if (turnContext.activity.from.id.toLowerCase().startsWith('agent')) {
             await this.manageAgent(turnContext, next);
         } else {
             await this.manageUser(turnContext, next);
@@ -46,20 +46,28 @@ class HandoverMiddleware {
         const { activity: { text } } = turnContext;
 
         if (user.state === UserState.Agent) {
-            return await this.adapter.continueConversation(user.agentReference, async agentContext => {
+            await this.adapter.continueConversation(user.agentReference, async agentContext => {
                 await agentContext.sendActivity(turnContext.activity.text);
             });
         }
 
         switch (text.toLowerCase()) {
         case 'agent':
-            await this.provider.queueForAgent(conversationReference);
-            await turnContext.sendActivity('Please wait while we try to connect you to an agent.');
+            if (user.state === UserState.Bot) {
+                await this.provider.queueForAgent(conversationReference);
+                await turnContext.sendActivity('Please wait while we try to connect you to an agent.');
+            } else {
+                await turnContext.sendActivity('You are already connected to an agent.');
+            }
             break;
         case 'cancel':
-            await this.provider.unqueueForAgent(conversationReference);
-            await turnContext.sendActivity('You are now reconnected to the bot!');
-            break;
+            if (user.state === UserState.Agent) {
+                await this.provider.unqueueForAgent(conversationReference);
+                await turnContext.sendActivity('You are now reconnected to the bot!');
+                break;
+            } else {
+                return await next();
+            }
         default:
             return await next();
         }
@@ -75,55 +83,111 @@ class HandoverMiddleware {
         const user = await this.provider.findByAgent(conversationReference);
         const { activity: { text } } = turnContext;
 
-        if (user) {
-            if (text === '#disconnect') {
+        switch (text) {
+        case '#list':
+            const replyList = { type: ActivityTypes.Message };
+
+            const customerBlocks = this.provider.getQueue().length !== 0 ? this.provider.getQueue().map((user, idx) =>
+                ({ 'type': 'TextBlock', 'text': `${ idx }. ${ user.userReference.user.name }` })) : '';
+
+            const listCard = CardFactory.adaptiveCard({
+                '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+                'type': 'AdaptiveCard',
+                'version': '1.0',
+                'body': [
+                    {
+                        'type': 'TextBlock',
+                        'text': 'List of Queued Customers:',
+                        'size': 'large'
+                    }
+                ].concat(customerBlocks)
+            });
+            replyList.attachments = [listCard];
+
+            await turnContext.sendActivity(replyList);
+
+            break;
+        case '#connect':
+            if (user && user.state === UserState.Agent) {
+                await turnContext.sendActivity('You are already connected to a user.');
+            } else {
+                const user = await this.provider.connectToAgent(conversationReference);
+                if (user) {
+                    await turnContext.sendActivity(`You are now successfully connected to ${ user.userReference.user.name }.`);
+                    try {
+                        var convId = user.userReference.conversation.id;
+                        if (convId.indexOf('|') !== -1) {
+                            convId = user.userReference.conversation.id.replace(/\|.*/, '');
+                        }
+                        var transcript = await localDb.get(convId);
+                    } catch (err) {
+                        console.log(err);
+                    }
+                    const replyTranscript = { type: ActivityTypes.Message };
+
+                    const transcriptBlocks = transcript.map((item, idx) =>
+                        ({ 'type': 'TextBlock',
+                            'text': `${ item[0] }: ${ item[1] }`,
+                            'wrap': true }));
+                    const transcriptCard = CardFactory.adaptiveCard({
+                        '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+                        'type': 'AdaptiveCard',
+                        'version': '1.0',
+                        'body': [
+                            {
+                                'type': 'TextBlock',
+                                'text': `Customer ${ user.userReference.user.name }'s Transcript:`,
+                                'size': 'large'
+                            }
+                        ].concat(transcriptBlocks)
+                    });
+                    replyTranscript.attachments = [transcriptCard];
+
+                    await turnContext.sendActivity(replyTranscript);
+
+                    await this.adapter.continueConversation(user.userReference, async userContext => {
+                        await userContext.sendActivity('You are now connected to an agent!');
+                    });
+                } else {
+                    await turnContext.sendActivity('There are no users in the Queue right now.');
+                }
+            }
+            break;
+        case '#disconnect':
+            if (user && user.state === UserState.Agent) {
                 this.provider.disconnectFromAgent(conversationReference);
                 await turnContext.sendActivity('You have been disconnected from the user.');
                 await this.adapter.continueConversation(user.userReference, async userContext => {
                     await userContext.sendActivity('The agent disconnected from the conversation. You are now reconnected to the bot.');
                 });
-                return;
-            } else if (text.indexOf('#') === 0) {
-                await turnContext.sendActivity('Command not valid when connect to user');
-                return;
             } else {
-                // await this.provider.log(user, conversationReference.user.name);
-                return this.adapter.continueConversation(user.userReference, async turnContext => {
-                    await turnContext.sendActivity(text);
-                });
-            }
-        }
-
-        switch (text) {
-        case '#list':
-            const queue = this.provider.getQueue();
-            if (queue.length !== 0) {
-                const message = queue.map(user => user.userReference.user.name).join('\n');
-                await turnContext.sendActivity('Users:\n\n' + message);
-            } else {
-                await turnContext.sendActivity('There are no users in the Queue right now.');
+                await turnContext.sendActivity('You are not connected to a user.');
             }
             break;
-        case '#connect':
-            const user = await this.provider.connectToAgent(conversationReference);
-            if (user) {
-                await turnContext.sendActivity(`You are connected to ${ user.userReference.user.name }`);
-                try {
-                    var convId = user.userReference.conversation.id;
-                    if (convId.indexOf('|') !== -1) {
-                        convId = user.userReference.conversation.id.replace(/\|.*/, '');
-                    }
-                    const transcript = await localDb.get(convId);
-                    await turnContext.sendActivity(transcript.join('\n'));
-                } catch (err) {
-                    console.log(err);
-                }
-                await this.adapter.continueConversation(user.userReference, async userContext => {
-                    await userContext.sendActivity('You are now connected to an agent!');
-                });
-            } else {
-                await turnContext.sendActivity('There are no users in the Queue right now.');
-            }
+        case 'menu':
+            const replyMenu = { type: ActivityTypes.Message };
+
+            const buttons = [
+                { type: ActionTypes.MessageBack, title: 'Check Queue', text: '#list' },
+                { type: ActionTypes.MessageBack, title: 'Connect Customer', text: '#connect' },
+                { type: ActionTypes.MessageBack, title: 'Disconnect Customer', text: '#disconnect' }
+            ];
+
+            const menuCard = CardFactory.heroCard('Agent Menu', undefined,
+                buttons, { text: `${ this.provider.getQueue().length } customer(s) waiting in line` });
+
+            replyMenu.attachments = [menuCard];
+
+            await turnContext.sendActivity(replyMenu);
+            break;
+        default:
+            break;
+        }
+
+        if (user && user.state === UserState.Agent) {
+            this.adapter.continueConversation(user.userReference, async turnContext => {
+                await turnContext.sendActivity(text);
+            });
         }
     }
 }

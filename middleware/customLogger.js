@@ -28,7 +28,9 @@ class CustomLogger {
 
         // Log only if this is type message
         if (activity.type === 'message') {
-            var logTextDb = activity.attachments ? `${ activity.from.name }: ${ activity.attachments[0].content.text }` : `${ activity.from.name }: ${ activity.text }`;
+            const logTextDb = activity.attachments
+                ? [ activity.from.name, activity.attachments[0].content.text ]
+                : [ activity.from.name, activity.text ];
 
             if (activity.conversation) {
                 var convId = activity.conversation.id;

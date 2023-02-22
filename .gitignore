@@ -4,3 +4,4 @@ lib
 .vscode
 secrets
 localDb
+package-lock.json

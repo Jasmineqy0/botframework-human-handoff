@@ -18,8 +18,10 @@
     "dependencies": {
         "botbuilder": "^4.2.0",
         "botframework-config": "^4.2.0",
+        "botframework-webchat": "^4.15.7",
         "dotenv": "^6.1.0",
         "level": "^8.0.0",
+        "react": "^18.2.0",
         "restify": "^7.2.3"
     },
     "devDependencies": {
