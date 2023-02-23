@@ -2,6 +2,7 @@
 // Licensed under the MIT License.
 
 const { ActivityTypes, MessageFactory } = require('botbuilder');
+const { replyMenu } = require('./resources/agentMenuReply');
 
 class MyBot {
     /**
@@ -16,10 +17,11 @@ class MyBot {
             const { membersAdded } = turnContext.activity;
             for (const member of membersAdded) {
                 if (member.id.toLowerCase().startsWith('agent')) {
-                    const reply = MessageFactory.suggestedActions(['menu'], "Welcome to the Human Handoff Middleware Example. You are currently communicating to the bot as an agent. To see a list of available functions, message 'menu'");
+                    const reply = MessageFactory.suggestedActions(['menu'], "Welcome to the Human Handoff Middleware Example! You are currently communicating to the bot as an agent. To see a list of available functions, message 'menu'.");
                     await turnContext.sendActivity(reply);
+                    await turnContext.sendActivity(replyMenu);
                 } else if (member.name === 'User') {
-                    const reply = MessageFactory.suggestedActions(['agent'], "Welcome to the Human Handoff Middleware Example. You are currently communicating to the bot as a user. To connect to agent, send 'agent'");
+                    const reply = MessageFactory.suggestedActions(['agent'], "Welcome to the Human Handoff Middleware Example. You are currently communicating to the bot as a user. To connect to agent, send 'agent'.");
                     await turnContext.sendActivity(reply);
                 }
             }

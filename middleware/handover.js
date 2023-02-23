@@ -1,5 +1,6 @@
-const { ActivityTypes, TurnContext, ActionTypes, CardFactory } = require('botbuilder');
+const { ActivityTypes, TurnContext, CardFactory } = require('botbuilder');
 const { localDb } = require('../levelDb/levelDb');
+const { replyMenu } = require('../resources/agentMenuReply');
 
 const UserState = {
     Bot: 'BOT',
@@ -85,24 +86,7 @@ class HandoverMiddleware {
 
         switch (text) {
         case '#list':
-            const replyList = { type: ActivityTypes.Message };
-
-            const customerBlocks = this.provider.getQueue().length !== 0 ? this.provider.getQueue().map((user, idx) =>
-                ({ 'type': 'TextBlock', 'text': `${ idx }. ${ user.userReference.user.name }` })) : '';
-
-            const listCard = CardFactory.adaptiveCard({
-                '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
-                'type': 'AdaptiveCard',
-                'version': '1.0',
-                'body': [
-                    {
-                        'type': 'TextBlock',
-                        'text': 'List of Queued Customers:',
-                        'size': 'large'
-                    }
-                ].concat(customerBlocks)
-            });
-            replyList.attachments = [listCard];
+            const replyList = this.createListReply(this.provider.getQueue());
 
             await turnContext.sendActivity(replyList);
 
@@ -114,34 +98,10 @@ class HandoverMiddleware {
                 const user = await this.provider.connectToAgent(conversationReference);
                 if (user) {
                     await turnContext.sendActivity(`You are now successfully connected to ${ user.userReference.user.name }.`);
-                    try {
-                        var convId = user.userReference.conversation.id;
-                        if (convId.indexOf('|') !== -1) {
-                            convId = user.userReference.conversation.id.replace(/\|.*/, '');
-                        }
-                        var transcript = await localDb.get(convId);
-                    } catch (err) {
-                        console.log(err);
-                    }
-                    const replyTranscript = { type: ActivityTypes.Message };
 
-                    const transcriptBlocks = transcript.map((item, idx) =>
-                        ({ 'type': 'TextBlock',
-                            'text': `${ item[0] }: ${ item[1] }`,
-                            'wrap': true }));
-                    const transcriptCard = CardFactory.adaptiveCard({
-                        '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
-                        'type': 'AdaptiveCard',
-                        'version': '1.0',
-                        'body': [
-                            {
-                                'type': 'TextBlock',
-                                'text': `Customer ${ user.userReference.user.name }'s Transcript:`,
-                                'size': 'large'
-                            }
-                        ].concat(transcriptBlocks)
-                    });
-                    replyTranscript.attachments = [transcriptCard];
+                    const transcript = await this.getTranscript(user.userReference.conversation.id);
+
+                    const replyTranscript = this.createTranscriptReply(user.userReference.user.name, transcript);
 
                     await turnContext.sendActivity(replyTranscript);
 
@@ -165,19 +125,6 @@ class HandoverMiddleware {
             }
             break;
         case 'menu':
-            const replyMenu = { type: ActivityTypes.Message };
-
-            const buttons = [
-                { type: ActionTypes.MessageBack, title: 'Check Queue', text: '#list' },
-                { type: ActionTypes.MessageBack, title: 'Connect Customer', text: '#connect' },
-                { type: ActionTypes.MessageBack, title: 'Disconnect Customer', text: '#disconnect' }
-            ];
-
-            const menuCard = CardFactory.heroCard('Agent Menu', undefined,
-                buttons, { text: `${ this.provider.getQueue().length } customer(s) waiting in line` });
-
-            replyMenu.attachments = [menuCard];
-
             await turnContext.sendActivity(replyMenu);
             break;
         default:
@@ -189,6 +136,67 @@ class HandoverMiddleware {
                 await turnContext.sendActivity(text);
             });
         }
+    }
+
+    async getTranscript(convID) {
+        try {
+            var convId = convID;
+            if (convId.indexOf('|') !== -1) {
+                convId = convID.replace(/\|.*/, '');
+            }
+            var transcript = await localDb.get(convId);
+        } catch (err) {
+            console.log(err);
+        }
+
+        return transcript;
+    }
+
+    createTranscriptReply(name, transcript) {
+        const replyTranscript = { type: ActivityTypes.Message };
+
+        const transcriptBlocks = transcript.map((item, idx) =>
+            ({ 'type': 'TextBlock',
+                'text': `${ item[0] }: ${ item[1] }`,
+                'wrap': true }));
+        const transcriptCard = CardFactory.adaptiveCard({
+            '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+            'type': 'AdaptiveCard',
+            'version': '1.0',
+            'body': [
+                {
+                    'type': 'TextBlock',
+                    'text': `Customer ${ name }'s Transcript:`,
+                    'size': 'large'
+                }
+            ].concat(transcriptBlocks)
+        });
+        replyTranscript.attachments = [transcriptCard];
+
+        return replyTranscript;
+    }
+
+    createListReply(queue) {
+        const replyList = { type: ActivityTypes.Message };
+
+        const customerBlocks = queue.length !== 0 ? queue.map((user, idx) =>
+            ({ 'type': 'TextBlock', 'text': `${ idx }. ${ user.userReference.user.name }` })) : '';
+
+        const listCard = CardFactory.adaptiveCard({
+            '$schema': 'http://adaptivecards.io/schemas/adaptive-card.json',
+            'type': 'AdaptiveCard',
+            'version': '1.0',
+            'body': [
+                {
+                    'type': 'TextBlock',
+                    'text': 'List of Queued Customers:',
+                    'size': 'large'
+                }
+            ].concat(customerBlocks)
+        });
+        replyList.attachments = [listCard];
+
+        return replyList;
     }
 }
 
