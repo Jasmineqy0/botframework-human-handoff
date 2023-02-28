@@ -86,7 +86,7 @@ class HandoverMiddleware {
                     }
                     let transcript = await localDb.get(`transcript_${ convId }`);
                     transcript = transcript.join('\n');
-                    await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, sourceId, conversationId, transcript);
+                    return await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, sourceId, conversationId, transcript);
                 } catch (err) {
                     console.log(err);
                 }
@@ -99,6 +99,7 @@ class HandoverMiddleware {
         case 'cancel agent':
             if (user.state === UserState.Agent) {
                 await this.provider.unqueueForAgent(conversationReference);
+                await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, user.sourceId, user.conversationId, text);
                 return await turnContext.sendActivity('You are now reconnected to the bot!');
             } else {
                 return await turnContext.sendActivity('You are not connected to an agent!');
