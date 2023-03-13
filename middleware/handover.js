@@ -70,7 +70,9 @@ class HandoverMiddleware {
                 return await next();
             }
         default:
-            return await next();
+            if (user.state !== UserState.Agent) {
+                await next();
+            }
         }
     }
 
