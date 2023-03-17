@@ -83,11 +83,11 @@ async function chatwootGet(chatwootHost, chatwootPort, api) {
     return new Promise((resolve, reject) => {
         const request = http.get(options, (response) => {
             let body = '';
-            console.log('statusCode:', response.statusCode);
-            console.log('headers:', response.headers);
+            // console.log('statusCode:', response.statusCode);
+            // console.log('headers:', response.headers);
             response.on('data', (chunk) => {
                 body += chunk;
-                console.log(`BODY: ${ chunk }`);
+                // console.log(`BODY: ${ chunk }`);
             });
             response.on('end', () => resolve(body));
         }).on('error', reject);
@@ -115,7 +115,7 @@ function chatwootPost(chatwootHost, chatwootPort, api, reqBody) {
 
     return new Promise((resolve, reject) => {
         const request = http.request(options, (response) => {
-            console.log('statusCode:', response.statusCode);
+            // console.log('statusCode:', response.statusCode);
             // console.log('headers:', response.headers);
             let body = '';
             response.on('data', (chunk) => {

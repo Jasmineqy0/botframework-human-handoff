@@ -14,9 +14,7 @@ class MyBot {
             await turnContext.sendActivity(`You said '${ turnContext.activity.text }'`);
         } else if (turnContext.activity.type === ActivityTypes.ConversationUpdate) {
             const { membersAdded } = turnContext.activity;
-            console.log(membersAdded);
             for (const { name } of membersAdded) {
-                console.log(name);
                 if (name !== 'Bot') {
                     const reply = MessageFactory.suggestedActions(['talk to human'], "Welcome to the Human Handover Middleware Example. You are currently communicating to the bot as a user. To connect to agent, send 'talk to human.'");
                     await turnContext.sendActivity(reply);

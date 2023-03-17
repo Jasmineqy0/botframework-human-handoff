@@ -58,13 +58,14 @@ class HandoverMiddleware {
     async manageUser(turnContext, next) {
         const conversationReference = TurnContext.getConversationReference(turnContext.activity);
         const user = await this.provider.findOrCreate(conversationReference);
-        // await this.provider.log((user, conversationReference.user.name, turnContext.activity.text));
 
         const { activity: { text } } = turnContext;
 
+        // check the text contect from user
         switch (text.toLowerCase()) {
-        case 'talk to human':
-            if (user.state !== UserState.Agent) {
+        case 'talk to human': // mimic detected intent to connect to agent
+            // initiate handover for bot status
+            if (user.state === UserState.Bot) {
                 await this.provider.unqueueForAgent(conversationReference);
 
                 await turnContext.sendActivity('Please wait while we try to connect you to an agent.');
@@ -73,45 +74,57 @@ class HandoverMiddleware {
                 const clientId = turnContext.activity.from.id;
 
                 try {
-                    // eslint-disable-next-line no-unused-vars
-                    const [sourceId, pubsub_token] = await createContact(process.env.chatwootHost, process.env.chatwootPort, clientId, clientName, process.env.inboxId);
+                    // usec chatwoot API to create contact and conversation
+                    const [sourceId] = await createContact(process.env.chatwootHost, process.env.chatwootPort, clientId, clientName, process.env.inboxId);
                     const conversationId = await createConversation(process.env.chatwootHost, process.env.chatwootPort, clientId, clientName, process.env.inboxId, sourceId);
 
                     await this.provider.queueForAgent(conversationReference, sourceId, conversationId);
 
-                    await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, sourceId, conversationId, `You are now connected to ${ clientName }`);
+                    // get the transcript from local storage and send it to chatwoot
                     var convId = user.userReference.conversation.id;
                     if (convId.indexOf('|') !== -1) {
                         convId = user.userReference.conversation.id.replace(/\|.*/, '');
                     }
                     let transcript = await localDb.get(`transcript_${ convId }`);
                     transcript = transcript.join('\n');
-                    return await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, sourceId, conversationId, transcript);
+                    await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, sourceId, conversationId, transcript);
                 } catch (err) {
                     console.log(err);
                 }
-            } else if (user.state === UserState.Agent) {
-                return await turnContext.sendActivity('You are already connected to an agent!');
+            // ask the user to be patient in queued status
+            } else if (user.state === UserState.Queued) {
+                await turnContext.sendActivity('You are already in the queue, Please wait while we try to connect you to an agent.');
+            // send the message to the agent and tell user that they are already connected to an agent
             } else {
-                return await turnContext.sendActivity('You are already in the queue!');
-            }
-            break;
-        case 'cancel agent':
-            if (user.state === UserState.Agent) {
-                await this.provider.unqueueForAgent(conversationReference);
                 await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, user.sourceId, user.conversationId, text);
-                return await turnContext.sendActivity('You are now reconnected to the bot!');
-            } else {
-                return await turnContext.sendActivity('You are not connected to an agent!');
+                await turnContext.sendActivity('You are already connected to an agent.');
             }
-        default:
             break;
-        }
-
-        if (user.state === UserState.Agent) {
-            return await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, user.sourceId, user.conversationId, text);
-        } else {
-            return await next();
+        case 'cancel': // mimic detected intent to cancel handover
+            // do nothing and continue to talk to the bot if user is already in bot status
+            if (user.state === UserState.Bot) {
+                await next();
+            // remove the user from queue if the user is in queued or agent status
+            } else if (user.state === UserState.Queued) {
+                await this.provider.unqueueForAgent(conversationReference);
+                await turnContext.sendActivity('You are now reconnected to the bot!');
+            } else {
+                await this.provider.unqueueForAgent(conversationReference);
+                await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, user.sourceId, user.conversationId, 'The User has terminated the conversation');
+                await turnContext.sendActivity('You are now reconnected to the bot!');
+            }
+            break;
+        default:
+            // do nothing and continue to talk to the bot
+            if (user.state === UserState.Bot) {
+                await next();
+            // ask the user to be patient in queued status
+            } else if (user.state === UserState.Queued) {
+                await turnContext.sendActivity('You are already in the queue, Please wait while we try to connect you to an agent.');
+            // send the message to the agent if the user is in agent status
+            } else {
+                await createMessage(process.env.chatwootHost, process.env.chatwootPort, process.env.inboxId, user.sourceId, user.conversationId, text);
+            }
         }
     }
 

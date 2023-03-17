@@ -38,14 +38,10 @@ class CustomLogger {
 
                 var fileName = `transcript_${ convId }`;
 
-                // var timestamp = Math.floor(Date.now() / 1);
-
                 if (!(fileName in this.conversationLogger)) {
                     this.conversationLogger[fileName] = ['Chat Transcript:'];
-                    // this.conversationLogger[fileName].botName = process.env.BOTNAME;
                 }
 
-                // this.conversationLogger[fileName][timestamp] = logTextDb;
                 this.conversationLogger[fileName].push(logTextDb);
 
                 const updateObj = this.conversationLogger[fileName];
@@ -55,8 +51,6 @@ class CustomLogger {
 
                 try {
                     await this.transcriptStorage.put(fileName, updateObj);
-                    // console.log('Transcript updated');
-                    // console.log(await this.transcriptStorage.get(fileName));
                 } catch (err) {
                     console.log({ message: `Logger ${ err.name } - ${ path.basename(__filename) }`, severity: 3, properties: { botName: process.env.BOTNAME, error: err.message, callStack: err.stack } });
                 }

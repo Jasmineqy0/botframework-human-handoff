@@ -23,7 +23,7 @@ const { BotConfiguration } = require('botframework-config');
 const { MyBot } = require('./bot');
 
 // Middleware
-const { HandoverMiddleware, ArrayHandoverProvider } = require('./middleware/handoverMiddleware');
+const { HandoverMiddleware, ArrayHandoverProvider } = require('./middleware/handover');
 const { CustomLogger } = require('./middleware/customLogger');
 
 // Read botFilePath and botFileSecret from .env file
