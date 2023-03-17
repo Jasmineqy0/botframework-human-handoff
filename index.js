@@ -66,19 +66,22 @@ try {
 // Get bot endpoint configuration by service name
 const endpointConfig = botConfig.findServiceByNameOrId(BOT_CONFIGURATION);
 
-// Create adapter.
+// Create adapters
 // See https://aka.ms/about-bot-adapter to learn more about .bot file its use and bot configuration.
 const botAdapter = new BotFrameworkAdapter({
     appId: endpointConfig.appId || process.env.microsoftAppID,
     appPassword: endpointConfig.appPassword || process.env.microsoftAppPassword
 });
 const chatwootAdapter = new ChatwootAdapter();
-const provider = new ArrayHandoverProvider();
-// Transcript logger middleware automatically logs incoming and outgoing activities.
+
+// transcript logger middleware automatically logs chat hostory and saves it to leveldb
 const transcriptStore = new CustomLogger();
+// create and use transcript logger middleware
 var transcriptMiddleware = new TranscriptLoggerMiddleware(transcriptStore);
 botAdapter.use(transcriptMiddleware);
-// handover middleware handles handover requests
+
+// use handover middleware with ArrayHandoverProvider
+const provider = new ArrayHandoverProvider();
 const handoverMiddleware = new HandoverMiddleware(provider, botAdapter);
 botAdapter.use(handoverMiddleware);
 chatwootAdapter.use(handoverMiddleware);
