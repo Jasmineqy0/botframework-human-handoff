@@ -24,7 +24,7 @@ const { MyBot } = require('./bot');
 
 // Middleware
 const { HandoverMiddleware, ArrayHandoverProvider } = require('./middleware/handoverMiddleware');
-const { CustomLogger } = require('./middleware/CustomLogger');
+const { CustomLogger } = require('./middleware/customLogger');
 
 // Read botFilePath and botFileSecret from .env file
 // Note: Ensure you have a .env file and include botFilePath and botFileSecret.
