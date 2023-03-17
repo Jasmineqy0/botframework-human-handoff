@@ -25,7 +25,9 @@ class HandoverMiddleware {
    * @param {*} next
    */
     async onTurn(turnContext, next) {
-        if (turnContext.activity.type !== ActivityTypes.Message) { return await next(); }
+        if (turnContext.activity.type !== ActivityTypes.Message) {
+            return await next();
+        }
 
         if (turnContext.activity.from.id.toLowerCase().startsWith('agent')) {
             await this.manageAgent(turnContext, next);
@@ -42,36 +44,49 @@ class HandoverMiddleware {
     async manageUser(turnContext, next) {
         const conversationReference = TurnContext.getConversationReference(turnContext.activity);
         const user = await this.provider.findOrCreate(conversationReference);
-        // await this.provider.log((user, conversationReference.user.name, turnContext.activity.text));
 
         const { activity: { text } } = turnContext;
 
-        if (user.state === UserState.Agent) {
-            await this.adapter.continueConversation(user.agentReference, async agentContext => {
-                await agentContext.sendActivity(turnContext.activity.text);
-            });
-        }
-
+        // check the text contect from user
         switch (text.toLowerCase()) {
-        case 'agent':
+        case 'talk to human': // mimic detected intent to connect to agent
+            // initiate handover for bot status
             if (user.state === UserState.Bot) {
                 await this.provider.queueForAgent(conversationReference);
                 await turnContext.sendActivity('Please wait while we try to connect you to an agent.');
+            // ask the user to be patient in queued status
+            } else if (user.state === UserState.Queued) {
+                await turnContext.sendActivity('You are already in the queue, Please wait while we try to connect you to an agent.');
+            // send the message to the agent and tell user that they are already connected to an agent
             } else {
+                await this.adapter.continueConversation(user.agentReference, async agentContext => {
+                    await agentContext.sendActivity(turnContext.activity.text);
+                });
                 await turnContext.sendActivity('You are already connected to an agent.');
             }
             break;
-        case 'cancel':
-            if (user.state === UserState.Agent) {
+        case 'cancel': // mimic detected intent to cancel handover
+            // do nothing and continue to talk to the bot if user is already in bot status
+            if (user.state === UserState.Bot) {
+                return await next();
+            // remove the user from queue if the user is in queued or agent status
+            } else {
                 await this.provider.unqueueForAgent(conversationReference);
                 await turnContext.sendActivity('You are now reconnected to the bot!');
-                break;
-            } else {
-                return await next();
             }
+            break;
         default:
-            if (user.state !== UserState.Agent) {
+            // do nothing and continue to talk to the bot
+            if (user.state === UserState.Bot) {
                 await next();
+            // ask the user to be patient in queued status
+            } else if (user.state === UserState.Queued) {
+                await turnContext.sendActivity('You are already in the queue, Please wait while we try to connect you to an agent.');
+            // send the message to the agent if the user is in agent status
+            } else {
+                await this.adapter.continueConversation(user.agentReference, async agentContext => {
+                    await agentContext.sendActivity(turnContext.activity.text);
+                });
             }
         }
     }

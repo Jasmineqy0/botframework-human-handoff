@@ -21,7 +21,7 @@ class MyBot {
                     await turnContext.sendActivity(reply);
                     await turnContext.sendActivity(replyMenu);
                 } else if (member.name === 'User') {
-                    const reply = MessageFactory.suggestedActions(['agent'], "Welcome to the Human Handoff Middleware Example. You are currently communicating to the bot as a user. To connect to agent, send 'agent'.");
+                    const reply = MessageFactory.suggestedActions(['talk to human'], "Welcome to the Human Handoff Middleware Example. You are currently communicating to the bot as a user. To connect to agent, send 'talk to human'.");
                     await turnContext.sendActivity(reply);
                 }
             }

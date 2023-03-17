@@ -17,7 +17,7 @@ const { MyBot } = require('./bot');
 
 // Middleware
 const { HandoverMiddleware, ArrayHandoverProvider } = require('./middleware');
-const { CustomLogger } = require('./middleware/CustomLogger');
+const { CustomLogger } = require('./middleware/customLogger');
 
 // Read botFilePath and botFileSecret from .env file
 // Note: Ensure you have a .env file and include botFilePath and botFileSecret.
@@ -64,11 +64,13 @@ const adapter = new BotFrameworkAdapter({
     appId: endpointConfig.appId || process.env.microsoftAppID,
     appPassword: endpointConfig.appPassword || process.env.microsoftAppPassword
 });
+// use handover middleware with ArrayHandoverProvider
 const provider = new ArrayHandoverProvider();
 adapter.use(new HandoverMiddleware(provider, adapter));
 
-// Transcript logger middleware automatically logs incoming and outgoing activities.
+// transcript logger middleware automatically logs chat hostory and saves it to leveldb
 const transcriptStore = new CustomLogger();
+// create and use transcript logger middleware
 var transcriptMiddleware = new TranscriptLoggerMiddleware(transcriptStore);
 adapter.use(transcriptMiddleware);
 

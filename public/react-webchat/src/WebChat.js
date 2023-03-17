@@ -39,7 +39,7 @@ const WebChat = () => {
         { 
           method: 'POST',
           headers: {
-            'Authorization': `Bearer MEnCXMga-RQ.vQljb74sWLBkgQ_QeMrcCe89uLcNLExpVppOmcj49g4`,
+            'Authorization': `Bearer <---WEB CHAT SECRET KEYS->`,
             'Content-Type': 'application/json'
           }
         });
