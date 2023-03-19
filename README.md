@@ -141,7 +141,7 @@ This focus is how the connectivity between agents and users is achieved instead 
 ## Demo
 
 
-<img src="images/demo-chatwoot.gif" height="40%">
+<img src="images/demo-chatwoot.gif" height="400" width="750">
 
 # Deploy the Bot on Azure
 
