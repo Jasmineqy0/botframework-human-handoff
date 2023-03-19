@@ -105,9 +105,12 @@ app.post('/api/messages', (req, res) => {
     });
 });
 
+// listen for messages from agents
 app.post('/', (req, res) => {
     if (req.body && req.body.message_type === 'outgoing') {
         console.log('------------- bot receiving message from chatwoot agent -------------');
+
+        // create a message object
         const channelAccount = {
             id: req.body.account.id,
             name: `agent_${ req.body.account.name }`,
@@ -127,10 +130,9 @@ app.post('/', (req, res) => {
             type: 'message'
         };
 
+        // create a turn context for chatwoot adapter
         const turnContext = new TurnContext(chatwootAdapter, message);
-
-        chatwootAdapter.runMiddleware(turnContext, async (context) => {
-            await myBot.onTurn(context);
-        });
+        // run middleware and call bot onTurn
+        chatwootAdapter.runMiddleware(turnContext);
     }
 });

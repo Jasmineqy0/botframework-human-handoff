@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 const dotenv = require('dotenv');
 const { createContact, createConversation, createMessage } = require('../chatwoot/chatwootAPI');
 const { ActivityTypes, TurnContext, BotFrameworkAdapter } = require('botbuilder');
