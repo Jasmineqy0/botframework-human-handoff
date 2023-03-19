@@ -38,7 +38,7 @@ This focus is how the connectivity between agents and users is achieved instead 
 
 ## Handover Flow
 
-![handover-within-bot-framework-levelDB.png](images/handover-within-bot-framework-levelDB.png)
+<img src="images/handover-within-bot-framework-levelDB.png" height="70%">
 
 ## Run the Bot
 
@@ -82,7 +82,8 @@ This focus is how the connectivity between agents and users is achieved instead 
 
 ## Demo
 
-![demo-webchat.gif](images/demo-webchat.gif)
+<img src="images/demo-webchat.gif" height="50%">
+
 
 # Handover via Chatwoot
 
@@ -90,7 +91,7 @@ This focus is how the connectivity between agents and users is achieved instead 
 
 ## Handover Flow
 
-![handover-via-chatwoot-levelDB.png](images/handover-via-chatwoot-levelDB.png)
+<img src="images/handover-via-chatwoot-levelDB.png" height="70%">
 
 ## Run the Bot
 
@@ -139,7 +140,8 @@ This focus is how the connectivity between agents and users is achieved instead 
 
 ## Demo
 
-![demo-chatwoot.gif](images/demo-chatwoot.gif)
+
+<img src="images/demo-chatwoot.gif" height="70%">
 
 # Deploy the Bot on Azure
 
