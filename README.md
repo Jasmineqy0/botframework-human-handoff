@@ -43,24 +43,24 @@ This focus is how the connectivity between agents and users is achieved instead 
 ## Run the Bot
 
 - Create a bot in Azure Bot Services: tutorial [here](https://learn.microsoft.com/en-us/azure/bot-service/abs-quickstart?view=azure-bot-service-4.0&tabs=multitenant) (for simplicity select multi-tenant for Bot identity)
-- Obtain Microsoft *App ID* and *App Password*:  after a bot is created,  see in *configuration*
-- Configure file handoff.bot: configure  *appId* and *appPassword*
+- Obtain Microsoft App ID and App Password:  after a bot is created,  see in configuration
+- Configure file handoff.bot: configure  appId and appPassword
     ```python
         "appId": "<--YOUR APP ID-->",
         "appPassword": "<--YOU APP PASSWORD-->",
     ```
-- Configure file .env: configure  *MicrosoftAppId* and *MicrosoftAppPassword*
+- Configure file .env: configure  MicrosoftAppId and MicrosoftAppPassword
     ```python
         MicrosoftAppId=<--YOUR APP ID-->
         MicrosoftAppPassword=<--YOU APP PASSWORD-->
     ```
 - Start an ngrok connection for the bot running locally: `ngrok http 3978`
 - Configure messaging endpoint:
-    - go to *configuration* for the bot in Azure
-    - change *messaging endpoing* to: *<address-by-ngrok>/api/messages* (for example , it might look like [https://some-address.eu.ngrok.io/api/messages](https://86c2-138-246-3-7.eu.ngrok.io/api/messages))
+    - go to configuration for the bot in Azure
+    - change messaging endpoing to: <--address-by-ngrok-->/api/messages (for example , it might look like [https://some-address.eu.ngrok.io/api/messages](https://86c2-138-246-3-7.eu.ngrok.io/api/messages))
 - Install modules:  `npm install`
 - Start running the bot: `npm start`
-- Talk to the bot: open the Bot Emulator and connect via *open a .bot file* (select file *handoff.bot*), the trigger phrase for handover is *talk to human*
+- Talk to the bot: open the Bot Emulator and connect via *open a .bot file* (select file handoff.bot), the trigger phrase for handover is 'talk to human'
 
 ## Run the Agent via Web Chat
 
@@ -97,26 +97,26 @@ This focus is how the connectivity between agents and users is achieved instead 
 
 - The same as within Bot Framework
 - Create a bot in Azure Bot Services: tutorial [here](https://learn.microsoft.com/en-us/azure/bot-service/abs-quickstart?view=azure-bot-service-4.0&tabs=multitenant) (for simplicity select multi-tenant for Bot identity)
-- Obtain Microsoft *App ID* and *App Password*:  after a bot is created,  see in *configuration*
-- Configure file handoff.bot: configure  *appId* and *appPassword*
+- Obtain Microsoft App ID and App Password:  after a bot is created,  see in configuration
+- Configure file handoff.bot: configure  appId and appPassword
     ```python
         "appId": "<--YOUR APP ID-->",
         "appPassword": "<--YOU APP PASSWORD-->",
     ```
-- Configure file .env: configure  *MicrosoftAppId* and *MicrosoftAppPassword*
+- Configure file .env: configure  MicrosoftAppId and MicrosoftAppPassword
     ```python
         MicrosoftAppId=<--YOUR APP ID-->
         MicrosoftAppPassword=<--YOU APP PASSWORD-->
     ```
 - Install modules:  `npm install`
 - Start running the bot: `npm start`
-- Talk to the bot: open the Bot Emulator and connect via *open a .bot file* (select file *handoff.bot*), the trigger phrase for handover is *talk to human*
+- Talk to the bot: open the Bot Emulator and connect via *open a .bot file* (select file handoff.bot), the trigger phrase for handover is talk to human
 
 ## Run the Chatwoot
 
 - Start an ngrok connection for the bot running locally: `ngrok http 3978`
 - Start Chatwoot locally: depending on the platform, follow the [tutorial](https://www.chatwoot.com/docs/self-hosted/)
-- Configure *chatwootHost, chatwootPort, chatwootURL* in the enviroment file `.env`.
+- Configure chatwootHost, chatwootPort, chatwootURL in the enviroment file `.env`.
     
     ```python
     chatwootHost=<--YOUR CHATWOOTHOST-->
@@ -131,7 +131,7 @@ This focus is how the connectivity between agents and users is achieved instead 
     
 - Configure Webhook URL in Chatwoot
     - In Chatwoot, create an API inbox with the [tutorial](https://www.chatwoot.com/docs/product/channels/api/create-channel/)
-    - While creating the API inbox, set the *Webhook URL to the* address by ngrok
+    - While creating the API inbox, set the Webhook URL to the address by ngrok
 - Configure the inboxId in in the enviroment file `.env`
     ```python
     inboxId=<--YOUR CHATWOOT INBOXID-->
