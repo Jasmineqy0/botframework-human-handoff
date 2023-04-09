@@ -4,7 +4,7 @@ In automated dialogue-based systems, the conversation between chatbots and users
 
 Based on [the work of TJ Durnford](https://github.com/tdurnford), this repository provides two prototypes (in different branches) to address handover situations for the chatbots via different agent platforms: 
 
-- handover to the Wet Chat channel within Bot Frameowork
+- handover to the Web Chat channel within Bot Frameowork
 - handover to an agent in the open source software Chatwoot
 
 This focus is how the connectivity between agents and users is achieved instead of what triggers the conversation to transfer.  Hence, simple trigger word ‘talk to human’ is used for handover.
