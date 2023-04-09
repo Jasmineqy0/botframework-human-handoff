@@ -47,12 +47,12 @@ This focus is how the connectivity between agents and users is achieved instead 
 - Configure file handoff.bot: configure  appId and appPassword
     ```python
         "appId": "<--YOUR APP ID-->",
-        "appPassword": "<--YOU APP PASSWORD-->",
+        "appPassword": "<--YOUR APP PASSWORD-->",
     ```
 - Configure file .env: configure  MicrosoftAppId and MicrosoftAppPassword
     ```python
         MicrosoftAppId=<--YOUR APP ID-->
-        MicrosoftAppPassword=<--YOU APP PASSWORD-->
+        MicrosoftAppPassword=<--YOUR APP PASSWORD-->
     ```
 - Start an ngrok connection for the bot running locally: `ngrok http 3978`
 - Configure messaging endpoint:
